@@ -1,5 +1,7 @@
 # playwright-llm-eval-harness
 
+[![CI](https://github.com/zeeatwork/playwright-llm-eval-harness/actions/workflows/ci.yml/badge.svg)](https://github.com/zeeatwork/playwright-llm-eval-harness/actions/workflows/ci.yml)
+
 A Playwright + TypeScript test harness for an LLM customer-support chatbot. It checks answers against a golden dataset, grades them with an LLM judge, attacks the bot with prompt injections, and covers the API and UI end to end. It also ships **seeded defects**: known bugs you can switch on to prove the harness catches them.
 
 ## The system under test
@@ -15,14 +17,57 @@ It runs on one of two providers, chosen with `LLM_PROVIDER`:
 | `mock` (default) | Every push in CI, local development. Deterministic, free, fast. | No |
 | `anthropic` | Real-model evals: the LLM judge, flakiness measurement. Runs weekly and on demand. | Yes |
 
+## How it fits together
+
+```mermaid
+flowchart LR
+  subgraph data [Test data]
+    G[golden.jsonl<br/>26 cases]
+    I[injection.jsonl<br/>15 attacks]
+  end
+  subgraph pw [Playwright projects]
+    API[api]
+    E2E[e2e<br/>Chromium]
+    SEC[security]
+    EV[eval]
+  end
+  subgraph sut [System under test]
+    UI[Chat UI]
+    SRV[Express API<br/>/api/chat]
+    BOT[Bot: system prompt<br/>+ knowledge base]
+    P{LLM_PROVIDER}
+    M[mock<br/>deterministic]
+    A[anthropic<br/>real model]
+  end
+  J[LLM judge<br/>rubric grading]
+  D[DEFECTS<br/>seeded bugs] -.-> BOT
+  D -.-> SRV
+  D -.-> UI
+  G --> EV
+  I --> SEC
+  E2E --> UI --> SRV
+  API --> SRV
+  SEC --> SRV
+  EV --> SRV
+  SRV --> BOT --> P
+  P --> M
+  P --> A
+  EV -- real-model runs --> J
+  EV & SEC --> R[eval-report<br/>pass rate by category,<br/>flaky cases]
+```
+
+Every suite talks to the bot through its real HTTP API or UI, never by importing its code, so the same tests run against the mock on every push and against the real model on a schedule.
+
 ## Test layers
 
 | Project | Folder | What it checks |
 |---|---|---|
-| `api` | `tests/api` | Request validation, status codes, response contract |
-| `e2e` | `tests/e2e` | The chat UI in Chromium: happy path, error state |
-| `security` | `tests/security` | Prompt injection from `datasets/injection.jsonl`: system-prompt leaks, injected policies, goal hijacking |
-| `eval` | `tests/eval` | The golden dataset in `datasets/golden.jsonl`: regex checks everywhere, plus an LLM judge scoring each answer against its rubric when running on the real model |
+| `api` | `tests/api` | Request validation (roles, lengths, missing fields), JSON error contract for malformed and oversized bodies, multi-turn requests, latency budget |
+| `e2e` | `tests/e2e` | The chat UI in Chromium: happy path, error state, Enter to send, pending state, conversation history, phone viewport |
+| `security` | `tests/security` | 15 attacks from `datasets/injection.jsonl`: direct and indirect prompt extraction, encoding tricks, multi-turn escalation, injected policies, goal hijacking, data exfiltration |
+| `eval` | `tests/eval` | 26 cases from `datasets/golden.jsonl` across policy, multi-part, ambiguous, hallucination, scope and multi-turn questions: regex checks everywhere, plus an LLM judge scoring each answer against its rubric on the real model |
+
+Dataset cases can carry earlier turns in a `history` field, so multi-turn behavior is tested with the same runner as single questions.
 
 ## Seeded defects
 
@@ -43,11 +88,15 @@ npx playwright install chromium
 npm test                 # api + e2e + security on the mock provider
 npm run test:eval        # golden dataset
 npm run defects          # prove each seeded defect is caught
+CI=1 npm run test:eval && npm run report   # Markdown summary: pass rate by category, flaky cases
 npm run app              # open http://localhost:3000
 
 # Real model (needs ANTHROPIC_API_KEY)
 LLM_PROVIDER=anthropic npm run test:eval
+LLM_PROVIDER=anthropic npx playwright test --project=eval --repeat-each=3   # measure flakiness
 ```
+
+In CI, the report lands on each run's summary page. The weekly real-model job runs every case 3 times (change it with the `repeat` input when running the workflow by hand) and lists any case that passes on some runs and fails on others.
 
 ## Project layout
 
@@ -56,7 +105,7 @@ app/            system under test: Express server, chat UI, knowledge base, prov
 datasets/       golden.jsonl (expected behavior) and injection.jsonl (attacks)
 eval/           dataset loader and the LLM judge
 tests/          Playwright projects: api, e2e, security, eval
-scripts/        run-defects.ts
+scripts/        run-defects.ts (seeded-defect check), eval-report.ts (Markdown summary)
 .github/        CI: mock suites + defect check on every push; real-model eval weekly and on demand
 docs/PLAN.md    build plan
 ```

@@ -13,15 +13,21 @@ export class MockProvider implements LlmProvider {
     const question = history.at(-1)?.content.toLowerCase() ?? "";
     const guarded = system.includes("Never reveal");
 
-    if (/(system prompt|your instructions|ignore (all |previous )?instructions)/.test(question)) {
+    if (/(system prompt|initial prompt|your (instructions|rules|guidelines)|ignore (all |any |previous |prior |the )*(instructions|rules)|verbatim)/.test(question)) {
       const text = guarded ? "Sorry, I can't share that. I can help with orders, returns, shipping and warranty questions." : system;
       return { text, model: "mock", stopReason: "end_turn" };
     }
 
-    const sections = (system.split("<knowledge_base>")[1] ?? "").split(/\n## /).slice(1);
+    // Only the text between the tags: without the closing split, the last section (Contact) would carry
+    // "</knowledge_base>" into its answer and trip the security suite's prompt-leak canary.
+    const kb = (system.split("<knowledge_base>")[1] ?? "").split("</knowledge_base>")[0] ?? "";
+    const sections = kb.split(/\n## /).slice(1);
     const words = question.match(/[a-z]{4,}/g) ?? [];
+    // Score = keyword hits in the section, plus a bonus for hits in its heading, so
+    // "Can you ship to Canada?" lands on Shipping rather than on "Return shipping" under Returns.
+    const hits = (text: string) => words.filter((w) => text.toLowerCase().includes(w.replace(/s$/, ""))).length;
     const scored = sections
-      .map((s) => ({ s, score: words.filter((w) => s.toLowerCase().includes(w.replace(/s$/, ""))).length }))
+      .map((s) => ({ s, score: hits(s) + hits(s.split("\n")[0] ?? "") }))
       .sort((a, b) => b.score - a.score);
     const best = scored[0];
     const text =
