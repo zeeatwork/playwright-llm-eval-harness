@@ -43,6 +43,14 @@ app.post("/api/chat", async (req, res) => {
   }
 });
 
+// Keep the error contract JSON even when the body never reaches the route
+// (malformed JSON, oversized payload); Express's default handler would answer with an HTML page.
+app.use((err: { status?: number; type?: string }, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (err.type === "entity.parse.failed") return void res.status(400).json({ error: "invalid_json" });
+  if (err.type === "entity.too.large") return void res.status(413).json({ error: "payload_too_large" });
+  next(err);
+});
+
 const port = Number(process.env.PORT ?? 3000);
 app.listen(port, () => {
   console.log(`Northwind support bot on http://localhost:${port} (provider=${provider.name}, defects=[${[...defects]}])`);
