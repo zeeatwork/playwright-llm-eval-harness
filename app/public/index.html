@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Northwind Support</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; }
+    #log { border: 1px solid #ccc; border-radius: 8px; min-height: 300px; padding: 1rem; overflow-y: auto; }
+    .msg { margin: .5rem 0; } .user { text-align: right; } .bot { color: #1a4d2e; }
+    .error { color: #b00020; }
+    form { display: flex; gap: .5rem; margin-top: 1rem; } input { flex: 1; padding: .5rem; }
+  </style>
+</head>
+<body>
+  <h1>Northwind Outfitters Support</h1>
+  <div id="log" role="log" aria-live="polite" data-testid="chat-log"></div>
+  <p class="error" role="alert" data-testid="chat-error" hidden></p>
+  <form id="chat-form">
+    <label for="chat-input" hidden>Message</label>
+    <input id="chat-input" data-testid="chat-input" autocomplete="off" placeholder="Ask about orders, returns, shipping…" />
+    <button type="submit" data-testid="chat-send">Send</button>
+  </form>
+  <script type="module">
+    const log = document.querySelector("#log");
+    const form = document.querySelector("#chat-form");
+    const input = document.querySelector("#chat-input");
+    const send = document.querySelector("[data-testid=chat-send]");
+    const errorBox = document.querySelector("[data-testid=chat-error]");
+    const { uiSwallowsErrors } = await fetch("/api/config").then((r) => r.json());
+    const history = [];
+
+    function add(role, text) {
+      const div = document.createElement("div");
+      div.className = `msg ${role}`;
+      div.dataset.testid = role === "user" ? "user-message" : "bot-message";
+      div.textContent = text;
+      log.append(div);
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const text = input.value.trim();
+      if (!text) return;
+      errorBox.hidden = true;
+      history.push({ role: "user", content: text });
+      add("user", text);
+      input.value = "";
+      send.disabled = true;
+      try {
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ messages: history }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        history.push({ role: "assistant", content: data.reply });
+        add("bot", data.reply);
+      } catch {
+        history.pop();
+        if (!uiSwallowsErrors) {
+          errorBox.textContent = "Something went wrong. Please try again.";
+          errorBox.hidden = false;
+        }
+      } finally {
+        send.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

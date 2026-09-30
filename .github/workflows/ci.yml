@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1" # weekly real-model eval, Mondays 06:00 UTC
+
+jobs:
+  offline:
+    name: Tests (mock LLM)
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run typecheck
+      - run: npx playwright test --project=api --project=security --project=e2e --project=eval
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: playwright-report-mock, path: playwright-report, retention-days: 14 }
+
+  seeded-defects:
+    name: Seeded defects are caught
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run defects
+
+  real-model-eval:
+    name: Eval against real model
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    env:
+      LLM_PROVIDER: anthropic
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx playwright test --project=eval --project=security
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-results-real-model
+          path: |
+            playwright-report
+            eval-results
+          retention-days: 30
