@@ -1,4 +1,6 @@
-# Build plan (Sep 30 – Oct 21, 2026)
+# Build plan
+
+> **Current status lives in [GitHub Issues](https://github.com/zeeatwork/playwright-llm-eval-harness/issues) and the project board.** This file is the original plan, kept for history.
 
 Rescheduled Nov 2026. Current plan: 12 sessions of up to 3 hours each, starting Nov 7. Session 1 (orientation) is done.
 
