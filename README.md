@@ -98,6 +98,15 @@ LLM_PROVIDER=anthropic npx playwright test --project=eval --repeat-each=3   # me
 
 In CI, the report lands on each run's summary page. The weekly real-model job runs every case 3 times (change it with the `repeat` input when running the workflow by hand) and lists any case that passes on some runs and fails on others.
 
+## Roadmap
+
+Work is tracked in [GitHub Issues](https://github.com/zeeatwork/playwright-llm-eval-harness/issues), grouped into two milestones:
+
+- [Phase 1: Foundations](https://github.com/zeeatwork/playwright-llm-eval-harness/milestone/1): larger datasets, a real-model baseline, judge calibration, flakiness, reporting
+- [Phase 2: Harness features](https://github.com/zeeatwork/playwright-llm-eval-harness/milestone/2): multiple scorers, regression tracking between runs, evals on every pull request, MCP tool-call evals
+
+This is a long-running project, worked on in small steps most weekdays.
+
 ## Project layout
 
 ```
