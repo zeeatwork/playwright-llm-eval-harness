@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      repeat:
+        description: "Runs per case in the real-model eval (measures flakiness)"
+        default: "3"
   schedule:
     - cron: "0 6 * * 1" # weekly real-model eval, Mondays 06:00 UTC
 
@@ -21,6 +25,9 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run typecheck
       - run: npx playwright test --project=api --project=security --project=e2e --project=eval
+      - name: Summarize results
+        if: ${{ !cancelled() && hashFiles('eval-results/results.json') != '' }}
+        run: npm run report
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: playwright-report-mock, path: playwright-report, retention-days: 14 }
@@ -49,7 +56,10 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci
-      - run: npx playwright test --project=eval --project=security
+      - run: npx playwright test --project=eval --project=security --repeat-each=${{ inputs.repeat || 3 }}
+      - name: Summarize results
+        if: ${{ !cancelled() && hashFiles('eval-results/results.json') != '' }}
+        run: npm run report
       - uses: actions/upload-artifact@v4
         if: always()
         with:

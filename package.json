@@ -12,7 +12,8 @@
     "test:e2e": "playwright test --project=e2e",
     "test:security": "playwright test --project=security",
     "test:eval": "playwright test --project=eval",
-    "defects": "tsx scripts/run-defects.ts"
+    "defects": "tsx scripts/run-defects.ts",
+    "report": "tsx scripts/eval-report.ts"
   },
   "engines": {
     "node": ">=20"

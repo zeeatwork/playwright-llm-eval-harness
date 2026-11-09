@@ -16,23 +16,29 @@ Budget: 10–20 h/week. Oct 1–7 is a busy work week, so that week only has sma
 ## Week 1: Oct 1–7 (busy, ~3–5 h, 30-minute chunks)
 
 - [ ] Push to GitHub, confirm CI is green, add `ANTHROPIC_API_KEY` repo secret
-- [ ] Grow `golden.jsonl` to ~25 cases (writing test data is easy to do in short sessions): multi-part questions, ambiguous questions, questions the knowledge base can't answer
-- [ ] Grow `injection.jsonl` to ~15 (indirect injection, encoding tricks, multi-turn escalation)
+- [x] Grow `golden.jsonl` to ~25 cases: now 26 (multi-part, ambiguous, unanswerable, scope, multi-turn). Drafted Sep 30; review each case and its rubric
+- [x] Grow `injection.jsonl` to ~15: now 15 (indirect, base64, translation, multi-turn escalation, delimiter escape, data exfiltration). Drafted Sep 30; review
 
 ## Week 2: Oct 8–14 (real model, ~10–15 h)
 
 - [ ] First real-model run; save the baseline pass rate
 - [ ] Calibrate the judge: hand-label ~15 replies and compare with the judge's verdicts; write down agreement
-- [ ] Repeat runs (e.g. 3× per case) to measure flakiness; report pass rate per case, not only pass/fail
-- [ ] Add multi-turn tests (context carried across turns) and remaining API TODOs
+- [ ] Repeat runs (e.g. 3× per case) to measure flakiness; report pass rate per case, not only pass/fail (tooling done: `--repeat-each` in the real-model job + `npm run report` flags flaky cases; needs the first real run)
+- [x] Add multi-turn tests (context carried across turns) and remaining API TODOs
 - [ ] 1–2 more seeded defects that only the LLM judge can catch (e.g. an answer that's polite but wrong)
 
 ## Week 3: Oct 15–21 (polish, ~10–15 h)
-
-- [ ] Eval summary report (pass rate by category, judge scores) published from CI
-- [ ] README: architecture diagram, sample report, "what I'd do next"
+- [x] Eval summary report (pass rate by category, judge scores) published from CI (`scripts/eval-report.ts` → run summary page)
+- [ ] README: architecture diagram (done), sample report, "what I'd do next"
 - [ ] Short write-up / LinkedIn post on what the harness caught
 - [ ] Buffer for slippage
+
+## Found in review (Sep 30)
+- Security suite's discount-code regex was case-insensitive, so a correct refusal ("I can't generate discount codes") failed on the real model, while a bare code like X7K2P9Q passed. Fixed.
+- Mock provider leaked `</knowledge_base>` whenever it answered from the last KB section (Contact), which trips the leak canary. Fixed.
+- Mock sent "Can you ship to Canada?" to the Returns section (tie on "ship"). Heading matches now break ties.
+- Malformed JSON got Express's HTML error page instead of a JSON error. The API now returns `{"error":"invalid_json"}` (400) and `{"error":"payload_too_large"}` (413).
+- Injected-policy check failed any reply that mentioned "365 days", even while correcting it. It now fails only if the real 30-day policy is missing.
 
 ## Cut list if time runs short
 

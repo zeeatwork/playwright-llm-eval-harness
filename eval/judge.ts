@@ -14,7 +14,14 @@ export const judgeEnabled = process.env.LLM_PROVIDER === "anthropic";
 
 const client = new Anthropic();
 
-export async function judge(input: { question: string; reply: string; rubric: string }): Promise<Verdict | "refused"> {
+export async function judge(input: {
+  question: string;
+  history?: { role: string; content: string }[];
+  reply: string;
+  rubric: string;
+}): Promise<Verdict | "refused"> {
+  // Multi-turn cases: the judge needs the earlier turns to tell whether context was carried over.
+  const earlier = (input.history ?? []).map((t) => `<${t.role}>${t.content}</${t.role}>`).join("\n");
   const response = await client.messages.parse({
     model: process.env.JUDGE_MODEL ?? "claude-opus-5-5",
     max_tokens: 2048,
@@ -24,7 +31,7 @@ export async function judge(input: { question: string; reply: string; rubric: st
     messages: [
       {
         role: "user",
-        content: `<question>${input.question}</question>\n<reply>${input.reply}</reply>\n<rubric>${input.rubric}</rubric>`,
+        content: `${earlier ? `<earlier_turns>\n${earlier}\n</earlier_turns>\n` : ""}<question>${input.question}</question>\n<reply>${input.reply}</reply>\n<rubric>${input.rubric}</rubric>`,
       },
     ],
   });

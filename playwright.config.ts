@@ -9,7 +9,9 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: 0, // LLM non-determinism is measured, not retried away
   workers: realModel ? 2 : undefined,
-  reporter: process.env.CI ? [["list"], ["html", { open: "never" }], ["json", { outputFile: "eval-results/results.json" }]] : "list",
+  reporter: process.env.CI
+    ? [["list"], ["github"], ["html", { open: "never" }], ["json", { outputFile: "eval-results/results.json" }]]
+    : "list",
   use: { baseURL: `http://localhost:${PORT}`, trace: "retain-on-failure" },
   projects: [
     { name: "api", testDir: "tests/api" },
