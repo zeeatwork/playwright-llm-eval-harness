@@ -15,7 +15,7 @@ It runs on one of two providers, chosen with `LLM_PROVIDER`:
 | Provider | Used for | Needs a key |
 |---|---|---|
 | `mock` (default) | Every push in CI, local development. Deterministic, free, fast. | No |
-| `anthropic` | Real-model evals: the LLM judge, flakiness measurement. Runs weekly and on demand. | Yes |
+| `anthropic` | Real-model evals: the LLM judge, flakiness measurement. Runs on demand only. | Yes |
 
 ## How it fits together
 
@@ -56,7 +56,7 @@ flowchart LR
   EV & SEC --> R[eval-report<br/>pass rate by category,<br/>flaky cases]
 ```
 
-Every suite talks to the bot through its real HTTP API or UI, never by importing its code, so the same tests run against the mock on every push and against the real model on a schedule.
+Every suite talks to the bot through its real HTTP API or UI, never by importing its code, so the same tests run against the mock on every push and against the real model on demand.
 
 ## Test layers
 
@@ -96,7 +96,7 @@ LLM_PROVIDER=anthropic npm run test:eval
 LLM_PROVIDER=anthropic npx playwright test --project=eval --repeat-each=3   # measure flakiness
 ```
 
-In CI, the report lands on each run's summary page. The weekly real-model job runs every case 3 times (change it with the `repeat` input when running the workflow by hand) and lists any case that passes on some runs and fails on others.
+In CI, the report lands on each run's summary page. The real-model job runs only when you start it by hand. It runs every case once by default; set the `repeat` input to 3 to measure flakiness and lists any case that passes on some runs and fails on others.
 
 ## Roadmap
 
@@ -115,6 +115,6 @@ datasets/       golden.jsonl (expected behavior) and injection.jsonl (attacks)
 eval/           dataset loader and the LLM judge
 tests/          Playwright projects: api, e2e, security, eval
 scripts/        run-defects.ts (seeded-defect check), eval-report.ts (Markdown summary)
-.github/        CI: mock suites + defect check on every push; real-model eval weekly and on demand
+.github/        CI: mock suites + defect check on every push; real-model eval on demand only
 docs/PLAN.md    build plan
 ```

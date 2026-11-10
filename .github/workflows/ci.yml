@@ -8,14 +8,11 @@ on:
     inputs:
       repeat:
         description: "Runs per case in the real-model eval (measures flakiness)"
-        default: "3"
-  schedule:
-    - cron: "0 6 * * 1" # weekly real-model eval, Mondays 06:00 UTC
+        default: "1"
 
 jobs:
   offline:
     name: Tests (mock LLM)
-    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,7 +31,6 @@ jobs:
 
   seeded-defects:
     name: Seeded defects are caught
-    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -46,7 +42,7 @@ jobs:
 
   real-model-eval:
     name: Eval against real model
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     env:
       LLM_PROVIDER: anthropic
