@@ -4,6 +4,12 @@
 
 A Playwright + TypeScript test harness for an LLM customer-support chatbot. It checks answers against a golden dataset, grades them with an LLM judge, attacks the bot with prompt injections, and covers the API and UI end to end. It also ships **seeded defects**: known bugs you can switch on to prove the harness catches them.
 
+## Status (Nov 2026)
+
+- **Working now:** all four test layers run green on the mock provider, in CI on every push. `npm run defects` confirms each seeded defect is caught.
+- **Built, not yet run:** the real-model path (Anthropic provider, LLM judge, flakiness runs). I don't have an API key set up yet, so there is no real-model baseline, no judge calibration, and no flakiness data so far.
+- **Next:** first real-model baseline, then judge calibration (hand-label replies and compare with the judge), then [Langfuse](https://langfuse.com) (open source) to track token usage and cost per run.
+
 ## The system under test
 
 **Northwind Support Bot** (`app/`) is a small Express app with a chat UI. It answers questions about a fictional outdoor-gear store, using only a short knowledge base ([app/knowledge/policies.md](app/knowledge/policies.md)).
@@ -91,7 +97,7 @@ npm run defects          # prove each seeded defect is caught
 CI=1 npm run test:eval && npm run report   # Markdown summary: pass rate by category, flaky cases
 npm run app              # open http://localhost:3000
 
-# Real model (needs ANTHROPIC_API_KEY)
+# Real model (needs ANTHROPIC_API_KEY; not run yet, see Status)
 LLM_PROVIDER=anthropic npm run test:eval
 LLM_PROVIDER=anthropic npx playwright test --project=eval --repeat-each=3   # measure flakiness
 ```
@@ -103,7 +109,7 @@ In CI, the report lands on each run's summary page. The real-model job runs only
 Work is tracked in [GitHub Issues](https://github.com/zeeatwork/playwright-llm-eval-harness/issues), grouped into two milestones:
 
 - [Phase 1: Foundations](https://github.com/zeeatwork/playwright-llm-eval-harness/milestone/1): larger datasets, a real-model baseline, judge calibration, flakiness, reporting
-- [Phase 2: Harness features](https://github.com/zeeatwork/playwright-llm-eval-harness/milestone/2): multiple scorers, regression tracking between runs, evals on every pull request, MCP tool-call evals
+- [Phase 2: Harness features](https://github.com/zeeatwork/playwright-llm-eval-harness/milestone/2): multiple scorers, regression tracking between runs, evals on every pull request, MCP tool-call evals, token and cost tracking with Langfuse
 
 This is a long-running project, worked on in small steps most weekdays.
 
