@@ -123,5 +123,5 @@ tests/          Playwright projects: api, e2e, security, eval
 scripts/        run-defects.ts (seeded-defect check), eval-report.ts (Markdown summary)
 .github/        CI: mock suites + defect check on every push; real-model eval on demand only
 docs/PLAN.md    build plan
-docs/CHEATSHEET.md  one-page summary: plans, challenges, git commands
+docs/CHEATSHEET.md  one-page summary: plans, challenges, git commands (printable landscape PDF: CHEATSHEET.pdf)
 ```
