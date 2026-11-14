@@ -2,6 +2,7 @@
   "name": "playwright-llm-eval-harness",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "description": "Playwright + TypeScript evaluation harness for an LLM support chatbot: golden dataset, model-graded checks, prompt-injection tests, seeded defects, API + E2E coverage.",
   "scripts": {
